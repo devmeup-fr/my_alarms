@@ -1,0 +1,47 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  build-android:
+    name: Build for Android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build libgtk-3-dev
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      - run: flutter doctor
+      - run: flutter pub get
+      - run: flutter build apk --debug --split-per-abi --no-pub
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alarms-android-debug
+          path: build/app/outputs/flutter-apk/*.apk
+          compression-level: 0
+      - run: flutter build appbundle --debug --no-pub
+  build-ios:
+    name: Build for iOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          architecture: x64
+      - run: flutter doctor
+      - run: flutter pub get
+      - run: flutter build ios --release --no-pub --no-codesign
