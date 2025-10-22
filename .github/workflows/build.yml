@@ -28,7 +28,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      - run: flutter doctor
       - run: flutter pub get
       - run: flutter build apk --debug --split-per-abi --no-pub
       - name: Rename APKs with version
@@ -43,13 +42,10 @@ jobs:
           compression-level: 0
       - run: flutter build appbundle --debug --no-pub
       - name: Upload release asset
-        if: github.event_name == 'release' && github.event.action == 'published'
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            build/app/outputs/flutter-apk/app-arm64-v8a-debug-${{ github.ref_name }}.apk
-            build/app/outputs/flutter-apk/app-armeabi-v7a-debug-${{ github.ref_name }}.apk
-            build/app/outputs/flutter-apk/app-x86_64-debug-${{ github.ref_name }}.apk
+          files: build/app/outputs/flutter-apk/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -63,6 +59,5 @@ jobs:
         with:
           channel: 'stable'
           architecture: x64
-      - run: flutter doctor
       - run: flutter pub get
       - run: flutter build ios --release --no-pub --no-codesign
