@@ -1,8 +1,13 @@
 name: Build
 
+permissions:
+  contents: write
+
 on:
   pull_request:
   push:
+  release:
+    types: [ published ]
 
 jobs:
   build-android:
@@ -26,12 +31,28 @@ jobs:
       - run: flutter doctor
       - run: flutter pub get
       - run: flutter build apk --debug --split-per-abi --no-pub
+      - name: Rename APKs with version
+        run: |
+          for APK in build/app/outputs/flutter-apk/*.apk; do
+            mv "$APK" "${APK%.apk}-${{ github.ref_name }}.apk"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: alarms-android-debug
           path: build/app/outputs/flutter-apk/*.apk
           compression-level: 0
       - run: flutter build appbundle --debug --no-pub
+      - name: Upload release asset
+        if: github.event_name == 'release' && github.event.action == 'published'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-debug-${{ github.ref_name }}.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-debug-${{ github.ref_name }}.apk
+            build/app/outputs/flutter-apk/app-x86_64-debug-${{ github.ref_name }}.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-ios:
     name: Build for iOS
     runs-on: macos-latest
